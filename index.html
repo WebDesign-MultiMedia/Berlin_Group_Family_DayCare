@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!--
+    Content-Security-Policy notes:
+    · frame-ancestors only works as an HTTP header — intentionally omitted here.
+    · connect-src 'self' allows the Live Server / HMR WebSocket on same host.
+    · script-src 'unsafe-inline' needed for legacy browser fallback; move JS to
+      workers + use nonce/hash if you deploy to a CDN with strict CSP.
+  -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self';
+                 style-src  'self' 'unsafe-inline' https://fonts.googleapis.com;
+                 font-src   'self' https://fonts.gstatic.com;
+                 img-src    'self' data: blob:;
+                 script-src 'self' 'unsafe-inline';
+                 connect-src 'self';
+                 object-src  'none';
+                 base-uri    'self';
+                 form-action 'self';" />
+  <meta http-equiv="X-Content-Type-Options"  content="nosniff" />
+  <meta http-equiv="Referrer-Policy"         content="strict-origin-when-cross-origin" />
+  <meta http-equiv="Permissions-Policy"      content="geolocation=(), microphone=(), camera=()" />
+
+  <title>Berlin Group Family Daycare | Where Learning &amp; Fun Never End</title>
+  <meta name="description"
+        content="Berlin Group Family Daycare — Bronx, NY. Ages 6 weeks to 12 years.
+                 Bilingual, 4 meals/day, arts, homework help. NYS Licensed. Call 917-684-3820." />
+
+  <!-- Preload fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800;900&display=swap"
+        rel="stylesheet" />
+
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     2-D ANIMATED BACKGROUND SCENE
+     Performance budget: 10 CSS-animated items (transform+opacity only),
+     no filter:blur() on any element, canvas capped at 35 particles/30fps
+══════════════════════════════════════════════════════════ -->
+<div class="bg-scene" aria-hidden="true" role="presentation">
+
+  <!-- Canvas for particle sparkles (no blobs — filter:blur was killing GPU) -->
+  <canvas id="bg-canvas"></canvas>
+
+  <!-- 10 floating items: slow durations, staggered delays, no drop-shadow -->
+  <span class="fi fi-star"   style="top:6%;   left:16%;  --fs:2rem;  --op:.52; --dur:3.2s; --del:0s;">⭐</span>
+  <span class="fi fi-star"   style="top:12%;  right:10%; --fs:1.6rem;--op:.48; --dur:2.8s; --del:-1.2s;">✨</span>
+  <span class="fi fi-pencil" style="top:24%;  left:4%;   --fs:1.9rem;--op:.44; --dur:3.2s; --del:-0.8s;">✏️</span>
+  <span class="fi fi-balloon" style="bottom:44%;left:2%; --fs:2rem;  --op:.44; --dur:8s;   --del:-3s;">🎈</span>
+  <span class="fi fi-bob"   style="top:15%;  right:28%; --fs:1.9rem;--op:.4;  --dur:5.5s; --del:-2s;  --r0:-6deg; --r1:8deg;">🎨</span>
+  <span class="fi fi-bob"   style="bottom:28%;right:4%; --fs:1.8rem;--op:.42; --dur:6s;   --del:-4s;  --r0:6deg;  --r1:-6deg;">🎶</span>
+  <span class="fi fi-bob"   style="top:62%;  left:4%;   --fs:2rem;  --op:.42; --dur:6.5s; --del:-1.5s;--r0:-10deg;--r1:10deg;">📚</span>
+  <span class="fi fi-pulse"  style="top:5%;   left:52%;  --fs:1.7rem;--op:.48; --dur:2.6s; --del:-1.8s;">💛</span>
+  <span class="fi fi-bob"   style="bottom:12%;left:14%; --fs:1.9rem;--op:.4;  --dur:7s;   --del:-2s;  --r0:7deg;  --r1:-7deg;">🌈</span>
+  <span class="fi fi-bob"   style="top:38%;  right:2%;  --fs:1.8rem;--op:.4;  --dur:6.8s; --del:-5s;  --r0:-8deg; --r1:8deg;">🍎</span>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     NAVBAR
+══════════════════════════════════════════════════════════ -->
+<header id="navbar" role="banner">
+  <div class="container">
+    <nav class="nav-inner" aria-label="Main navigation">
+
+      <!-- Logo -->
+      <a href="#hero" class="nav-logo" aria-label="Berlin Group Family Daycare — go to top">
+        <div class="logo-circle" aria-hidden="true">
+          <svg width="34" height="34" viewBox="0 0 36 36" fill="none">
+            <rect x="16" y="22" width="4" height="8" rx="1" fill="#c8f0e8"/>
+            <ellipse cx="18" cy="16" rx="9"  ry="8"  fill="#4CAF50"/>
+            <ellipse cx="13" cy="19" rx="5"  ry="4"  fill="#66BB6A"/>
+            <ellipse cx="23" cy="19" rx="5"  ry="4"  fill="#66BB6A"/>
+            <circle cx="8"  cy="9"  r="1.2" fill="#FFD93D"/>
+            <circle cx="28" cy="8"  r="1"   fill="#FFD93D"/>
+            <circle cx="9"  cy="26" r="2.5" fill="#FFE0B2"/>
+            <circle cx="27" cy="26" r="2.5" fill="#FFCCBC"/>
+            <rect   x="7"  y="28"  width="5" height="5" rx="2" fill="#FF8A65"/>
+            <rect   x="25" y="28"  width="5" height="5" rx="2" fill="#AB47BC"/>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-name">BERLIN</div>
+          <div class="brand-sub">Group Family Daycare</div>
+        </div>
+      </a>
+
+      <!-- Desktop links -->
+      <ul class="nav-links" role="list">
+        <li><a href="#services">
+          <span class="en-i">Services</span>
+          <span class="es-i">Servicios</span>
+        </a></li>
+        <li><a href="#about">
+          <span class="en-i">About</span>
+          <span class="es-i">Nosotros</span>
+        </a></li>
+        <li><a href="#ages">
+          <span class="en-i">Ages &amp; Rates</span>
+          <span class="es-i">Edades</span>
+        </a></li>
+        <li><a href="#contact">
+          <span class="en-i">Contact</span>
+          <span class="es-i">Contacto</span>
+        </a></li>
+      </ul>
+
+      <!-- Right controls -->
+      <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">
+        <div class="lang-toggle" role="group" aria-label="Language selector">
+          <button class="lang-btn active" data-lang="en" aria-label="Switch to English">EN</button>
+          <div class="lang-toggle-divider" aria-hidden="true"></div>
+          <button class="lang-btn"        data-lang="es" aria-label="Cambiar a Español">ES</button>
+        </div>
+        <a href="tel:+19176843820" class="btn-call nav-links" aria-label="Call 917-684-3820">
+          &#128222;&nbsp;917-684-3820
+        </a>
+      </div>
+
+      <!-- Hamburger (mobile) -->
+      <button class="hamburger" id="hamburger" aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobile-menu">
+        <span></span><span></span><span></span>
+      </button>
+    </nav>
+
+    <!-- Mobile menu -->
+    <nav class="mobile-menu" id="mobile-menu" aria-label="Mobile navigation">
+      <a href="#services">Services / Servicios</a>
+      <a href="#about">About / Nosotros</a>
+      <a href="#ages">Ages &amp; Rates / Edades</a>
+      <a href="#contact">Contact / Contacto</a>
+      <a href="tel:+19176843820" style="color:var(--yellow);font-size:1rem;">&#128222; 917-684-3820</a>
+    </nav>
+  </div>
+</header>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     HERO
+══════════════════════════════════════════════════════════ -->
+<main>
+<section id="hero" aria-label="Welcome section">
+  <div class="container">
+    <div class="hero-inner">
+
+      <!-- Copy -->
+      <div>
+        <div class="hero-badge">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          </svg>
+          <span class="en-i">NYS Licensed &bull; CPR Certified</span>
+          <span class="es-i">Licenciado NYS &bull; Certificado CPR</span>
+        </div>
+
+        <h1 class="hero-title">
+          <span class="en-b"><span class="hl">Berlin</span> Group<br>Family <span class="hl2">Daycare</span></span>
+          <span class="es-b"><span class="hl">Berlin</span> Group<br>Cuidado <span class="hl2">Familiar</span></span>
+        </h1>
+
+        <p class="hero-tagline">
+          <span class="en-i">&#8220;Where learning and fun never end.&#8221;</span>
+          <span class="es-i">&#8220;Donde el aprendizaje y la diversión nunca terminan.&#8221;</span>
+        </p>
+
+        <p class="hero-desc">
+          <span class="en-i">A warm, nurturing home in the Bronx where children ages 6&nbsp;weeks to 12&nbsp;years grow, learn, and thrive every single day.</span>
+          <span class="es-i">Un hogar cálido en el Bronx donde niños de 6&nbsp;semanas a 12&nbsp;años crecen, aprenden y se desarrollan cada día.</span>
+        </p>
+
+        <div class="hero-actions">
+          <a href="tel:+19176843820" class="btn-primary" aria-label="Call us now at 917-684-3820">
+            &#128222;
+            <span class="en-i">Call Us Now</span>
+            <span class="es-i">Llámanos Hoy</span>
+          </a>
+          <a href="#contact" class="btn-ghost" aria-label="Schedule a free tour">
+            &#128197;
+            <span class="en-i">Free Tour</span>
+            <span class="es-i">Tour Gratis</span>
+          </a>
+        </div>
+
+        <div class="hero-pills">
+          <div class="pill"><span class="pill-dot" style="background:var(--teal);"></span>
+            <span class="en-i">6 Weeks – 12 Years</span>
+            <span class="es-i">6 Semanas – 12 Años</span>
+          </div>
+          <div class="pill"><span class="pill-dot" style="background:var(--pink);"></span>
+            <span class="en-i">Bilingual Program</span>
+            <span class="es-i">Programa Bilingüe</span>
+          </div>
+          <div class="pill"><span class="pill-dot" style="background:var(--yellow-dk);"></span>
+            HRA/ACS · Zelle · Cash
+          </div>
+        </div>
+      </div>
+
+      <!-- Visual -->
+      <div class="hero-visual" aria-hidden="true">
+        <div class="logo-ring">
+          <svg width="230" height="230" viewBox="0 0 240 240" fill="none">
+            <rect x="112" y="148" width="16" height="46" rx="4" fill="#b2dfdb"/>
+            <ellipse cx="120" cy="192" rx="48" ry="10" fill="rgba(76,175,80,.35)"/>
+            <ellipse cx="120" cy="132" rx="52" ry="46" fill="#43A047"/>
+            <ellipse cx="94"  cy="148" rx="30" ry="24" fill="#4CAF50"/>
+            <ellipse cx="146" cy="148" rx="30" ry="24" fill="#4CAF50"/>
+            <ellipse cx="120" cy="108" rx="38" ry="32" fill="#66BB6A"/>
+            <circle  cx="100" cy="118" r="5"  fill="#FFD93D"/>
+            <circle  cx="135" cy="112" r="4"  fill="#FFD93D"/>
+            <circle  cx="118" cy="130" r="4"  fill="#FF8C42"/>
+            <text x="54"  y="76" font-size="20" fill="#FFD93D">★</text>
+            <text x="168" y="70" font-size="16" fill="#FF6B9D">★</text>
+            <text x="42"  y="150" font-size="12" fill="#fff">✦</text>
+            <text x="186" y="140" font-size="12" fill="#fff">✦</text>
+            <!-- Child left -->
+            <circle cx="62" cy="185" r="16"  fill="#FFE0B2"/>
+            <rect   x="52" y="198" width="20" height="26" rx="6" fill="#FF8A65"/>
+            <rect   x="48" y="205" width="10" height="18" rx="4" fill="#FF8A65"/>
+            <rect   x="64" y="205" width="10" height="18" rx="4" fill="#FF8A65"/>
+            <ellipse cx="62" cy="175" rx="16" ry="8" fill="#5D4037"/>
+            <circle cx="57" cy="184" r="2" fill="#333"/>
+            <circle cx="67" cy="184" r="2" fill="#333"/>
+            <!-- Child right -->
+            <circle cx="178" cy="185" r="16"  fill="#FFCCBC"/>
+            <rect   x="168" y="198" width="20" height="26" rx="6" fill="#AB47BC"/>
+            <rect   x="164" y="205" width="10" height="18" rx="4" fill="#AB47BC"/>
+            <rect   x="180" y="205" width="10" height="18" rx="4" fill="#AB47BC"/>
+            <ellipse cx="178" cy="175" rx="16" ry="8" fill="#212121"/>
+            <rect    x="162" y="174" width="6" height="14" rx="3" fill="#212121"/>
+            <rect    x="172" y="168" width="6" height="14" rx="3" fill="#212121"/>
+            <circle cx="173" cy="184" r="2" fill="#333"/>
+            <circle cx="183" cy="184" r="2" fill="#333"/>
+            <!-- BERLIN label -->
+            <text x="120" y="232" font-family="Arial Black,sans-serif" font-size="22"
+                  font-weight="900" fill="#FFD93D" text-anchor="middle" letter-spacing="2">BERLIN</text>
+            <text x="120" y="52"  font-family="Arial,sans-serif" font-size="10"
+                  font-weight="700" fill="#fff" text-anchor="middle" opacity=".8">GROUP FAMILY DAYCARE</text>
+          </svg>
+        </div>
+        <div class="hero-bubble hb1"></div>
+        <div class="hero-bubble hb2"></div>
+        <div class="hero-bubble hb3"></div>
+        <div class="hero-bubble hb4"></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     INFO STRIP
+══════════════════════════════════════════════════════════ -->
+<div id="info-strip" role="region" aria-label="Quick info">
+  <div class="container">
+    <div class="strip-grid">
+
+      <div class="strip-item">
+        <div class="strip-label"><span class="en-i">Ages Served</span><span class="es-i">Edades</span></div>
+        <div class="strip-value">6 Wks – 12 Yrs</div>
+      </div>
+
+      <div class="strip-item">
+        <div class="strip-label"><span class="en-i">Licensed By</span><span class="es-i">Licenciado por</span></div>
+        <div class="strip-value">NYS · OCFS</div>
+      </div>
+
+      <div class="strip-item">
+        <div class="strip-label"><span class="en-i">Daily Meals</span><span class="es-i">Comidas al Día</span></div>
+        <div class="strip-value">4 Healthy Meals</div>
+      </div>
+
+      <div class="strip-item">
+        <div class="strip-label"><span class="en-i">Free Tour</span><span class="es-i">Tour Gratis</span></div>
+        <div class="strip-value">917-684-3820</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     SERVICES
+══════════════════════════════════════════════════════════ -->
+<section id="services" aria-labelledby="services-title">
+  <div class="container">
+
+    <div class="text-center">
+      <p class="section-badge">
+        <span class="en-i">&#127979; What We Offer</span>
+        <span class="es-i">&#127979; Lo Que Ofrecemos</span>
+      </p>
+      <h2 class="section-title" id="services-title">
+        <span class="en-b">Our <span class="accent">Services</span></span>
+        <span class="es-b">Nuestros <span class="accent">Servicios</span></span>
+      </h2>
+      <p class="section-sub">
+        <span class="en-i">Everything your child needs to grow, learn, and stay safe — all under one roof.</span>
+        <span class="es-i">Todo lo que su niño necesita para crecer, aprender y estar seguro — todo en un solo lugar.</span>
+      </p>
+    </div>
+
+    <div class="services-grid">
+
+      <article class="glass-card service-card reveal" style="--accent-color:var(--teal);">
+        <div class="svc-icon">&#127968;</div>
+        <h3><span class="en-i">Early Stimulation</span><span class="es-i">Estimulación Temprana</span></h3>
+        <p><span class="en-i">Bilingual (English &amp; Spanish) early-learning programs that spark curiosity and build foundations from infancy.</span>
+           <span class="es-i">Programas bilingües de aprendizaje temprano para despertar la curiosidad desde la infancia.</span></p>
+      </article>
+
+      <article class="glass-card service-card reveal" style="--accent-color:var(--pink);">
+        <div class="svc-icon">&#127829;</div>
+        <h3><span class="en-i">4 Healthy Meals a Day</span><span class="es-i">4 Comidas Saludables</span></h3>
+        <p><span class="en-i">Nutritious, OCFS-approved breakfast, lunch, and snacks served daily to fuel active minds and bodies.</span>
+           <span class="es-i">Desayuno, almuerzo y meriendas nutritivas aprobadas por OCFS para energizar mentes y cuerpos.</span></p>
+      </article>
+
+      <article class="glass-card service-card reveal" style="--accent-color:var(--yellow-dk);">
+        <div class="svc-icon">&#127912;</div>
+        <h3><span class="en-i">Daily Arts, Crafts &amp; Music</span><span class="es-i">Artes, Manualidades y Música</span></h3>
+        <p><span class="en-i">Creative expression every day — painting, crafts, singing, and movement to develop motor skills and imagination.</span>
+           <span class="es-i">Expresión creativa cada día — pintura, manualidades, canto y movimiento para desarrollar habilidades.</span></p>
+      </article>
+
+      <article class="glass-card service-card reveal" style="--accent-color:var(--purple);">
+        <div class="svc-icon">&#128218;</div>
+        <h3><span class="en-i">Homework Help</span><span class="es-i">Ayuda con Tareas</span></h3>
+        <p><span class="en-i">Dedicated homework assistance for school-age children up to 12 years, so kids stay on track.</span>
+           <span class="es-i">Ayuda dedicada con las tareas para niños escolares hasta los 12 años, para que avancen.</span></p>
+      </article>
+
+      <article class="glass-card service-card reveal" style="--accent-color:var(--orange);">
+        <div class="svc-icon">&#128247;</div>
+        <h3><span class="en-i">Photo Updates After Drop-Off</span><span class="es-i">Reportes de Tranquilidad</span></h3>
+        <p><span class="en-i">We send photos and updates after drop-off so you always know how your little one is doing.</span>
+           <span class="es-i">Enviamos fotos y actualizaciones después del drop-off para que sepa cómo está su pequeño.</span></p>
+      </article>
+
+      <article class="glass-card service-card reveal" style="--accent-color:var(--green);">
+        <div class="svc-icon">&#127968;</div>
+        <h3><span class="en-i">Vacation &amp; Holiday Care</span><span class="es-i">Cuidado en Vacaciones</span></h3>
+        <p><span class="en-i">Care available during school vacations and public holidays — flexibility working families need.</span>
+           <span class="es-i">Cuidado disponible durante vacaciones escolares y días feriados para familias trabajadoras.</span></p>
+      </article>
+
+      <article class="glass-card service-card svc-wide reveal" style="--accent-color:var(--teal);">
+        <div class="svc-icon">&#128701;</div>
+        <div>
+          <h3><span class="en-i">Potty Training Support</span><span class="es-i">Apoyo en Entrenamiento del Baño</span></h3>
+          <p><span class="en-i">Our patient, experienced caregivers provide gentle, consistent potty-training support in coordination with your family's routine.</span>
+             <span class="es-i">Nuestros cuidadores pacientes brindan apoyo constante y gentil en coordinación con la rutina de su familia.</span></p>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     ABOUT / WHY US
+══════════════════════════════════════════════════════════ -->
+<section id="about" aria-labelledby="about-title">
+  <div class="container">
+    <div class="about-grid">
+
+      <!-- Stat cards -->
+      <div class="stats-grid" aria-label="Key facts">
+
+        <div class="glass-card stat-card reveal">
+          <div class="stat-num" style="color:var(--yellow);">NYS</div>
+          <p><span class="en-i">Licensed &amp; Regulated</span><span class="es-i">Licenciado y Regulado</span></p>
+        </div>
+
+        <div class="glass-card stat-card reveal">
+          <div class="stat-num" style="color:var(--pink);">4+</div>
+          <p><span class="en-i">Meals per Day</span><span class="es-i">Comidas por Día</span></p>
+        </div>
+
+        <div class="glass-card stat-card reveal">
+          <div class="stat-num" style="color:#c993ff;">2×</div>
+          <p><span class="en-i">Bilingual Learning</span><span class="es-i">Aprendizaje Bilingüe</span></p>
+        </div>
+
+        <div class="glass-card stat-card reveal">
+          <div class="stat-num" style="color:var(--orange);">CPR</div>
+          <p><span class="en-i">First Aid Certified</span><span class="es-i">Certificados en Primeros Auxilios</span></p>
+        </div>
+
+        <div class="glass-card stat-card stat-wide reveal" style="background:rgba(255,255,255,.18);">
+          <div class="stat-num" style="color:#fff;font-size:1.5rem;">
+            <span class="en-i">6 Weeks to 12 Years</span>
+            <span class="es-i">6 Semanas a 12 Años</span>
+          </div>
+          <p><span class="en-i">All ages welcome — infant through school age</span>
+             <span class="es-i">Todas las edades bienvenidas — bebé hasta escolar</span></p>
+        </div>
+
+      </div>
+
+      <!-- Content -->
+      <div class="about-content">
+        <p class="section-badge">
+          <span class="en-i">&#10084; Why Choose Us</span>
+          <span class="es-i">&#10084; ¿Por Qué Elegirnos?</span>
+        </p>
+        <h2 class="section-title" id="about-title">
+          <span class="en-b">A Home Away from <span class="accent-pink">Home</span></span>
+          <span class="es-b">Un Hogar Lejos del <span class="accent-pink">Hogar</span></span>
+        </h2>
+        <p class="section-sub">
+          <span class="en-i">At Berlin Group Family Daycare every child deserves a safe, loving space to explore the world. Our caregivers are trained, licensed, and passionate.</span>
+          <span class="es-i">En Berlin Group Family Daycare cada niño merece un espacio seguro y amoroso. Nuestros cuidadores están capacitados, licenciados y apasionados.</span>
+        </p>
+
+        <ul class="check-list">
+          <li class="check-item reveal">
+            <div class="check-icon" aria-hidden="true">&#10003;</div>
+            <span><span class="en-i"><strong>NYS Office of Children &amp; Family Services</strong> licensed facility</span>
+                  <span class="es-i">Instalación licenciada por la <strong>Oficina de Servicios para Niños y Familias de NY</strong></span></span>
+          </li>
+          <li class="check-item reveal">
+            <div class="check-icon" aria-hidden="true">&#10003;</div>
+            <span><span class="en-i">Staff <strong>CPR &amp; First Aid certified</strong> — your child's safety is priority #1</span>
+                  <span class="es-i">Personal <strong>certificado en CPR y Primeros Auxilios</strong> — la seguridad de su niño es prioridad</span></span>
+          </li>
+          <li class="check-item reveal">
+            <div class="check-icon" aria-hidden="true">&#10003;</div>
+            <span><span class="en-i">Bilingual environment (<strong>English &amp; Spanish</strong>) for diverse families</span>
+                  <span class="es-i">Ambiente bilingüe (<strong>Inglés y Español</strong>) para familias diversas</span></span>
+          </li>
+          <li class="check-item reveal">
+            <div class="check-icon" aria-hidden="true">&#10003;</div>
+            <span><span class="en-i">Structured daily routines with <strong>learning, play, meals &amp; rest</strong></span>
+                  <span class="es-i">Rutinas diarias estructuradas con <strong>aprendizaje, juego, comidas y descanso</strong></span></span>
+          </li>
+          <li class="check-item reveal">
+            <div class="check-icon" aria-hidden="true">&#10003;</div>
+            <span><span class="en-i">Photo updates keep you <strong>connected all day</strong></span>
+                  <span class="es-i">Actualizaciones con fotos para mantenerte <strong>conectado todo el día</strong></span></span>
+          </li>
+          <li class="check-item reveal">
+            <div class="check-icon" aria-hidden="true">&#10003;</div>
+            <span><span class="en-i">Convenient location in the <strong>Bronx, NY</strong></span>
+                  <span class="es-i">Ubicación conveniente en el <strong>Bronx, NY</strong></span></span>
+          </li>
+        </ul>
+
+        <div style="margin-top:30px;">
+          <a href="tel:+19176843820" class="btn-primary">
+            &#128222;
+            <span class="en-i">Schedule Your Free Tour</span>
+            <span class="es-i">Agenda tu Tour Gratis</span>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     AGES & ENROLLMENT
+══════════════════════════════════════════════════════════ -->
+<section id="ages" aria-labelledby="ages-title">
+  <div class="container">
+
+    <div class="text-center">
+      <p class="section-badge">
+        <span class="en-i">&#128100; Who We Serve</span>
+        <span class="es-i">&#128100; A Quién Servimos</span>
+      </p>
+      <h2 class="section-title" id="ages-title">
+        <span class="en-b">Ages &amp; <span class="accent">Enrollment</span></span>
+        <span class="es-b">Edades e <span class="accent">Inscripción</span></span>
+      </h2>
+      <p class="section-sub">
+        <span class="en-i">We welcome children at every stage — from newborns to preteens.</span>
+        <span class="es-i">Recibimos niños en cada etapa — desde recién nacidos hasta preadolescentes.</span>
+      </p>
+    </div>
+
+    <div class="ages-grid">
+      <div class="age-card ac-teal reveal">
+        <span class="age-emoji" aria-hidden="true">&#128118;</span>
+        <h3><span class="en-i">Infants</span><span class="es-i">Bebés</span></h3>
+        <p><span class="en-i">6 weeks – 18 months</span><span class="es-i">6 semanas – 18 meses</span></p>
+      </div>
+      <div class="age-card ac-purple reveal">
+        <span class="age-emoji" aria-hidden="true">&#128102;</span>
+        <h3><span class="en-i">Toddlers &amp; Pre-K</span><span class="es-i">Niños Pequeños</span></h3>
+        <p><span class="en-i">18 months – 5 years</span><span class="es-i">18 meses – 5 años</span></p>
+      </div>
+      <div class="age-card ac-pink reveal">
+        <span class="age-emoji" aria-hidden="true">&#128104;&#8205;&#127979;</span>
+        <h3><span class="en-i">School Age</span><span class="es-i">Edad Escolar</span></h3>
+        <p><span class="en-i">5 – 12 years</span><span class="es-i">5 – 12 años</span></p>
+      </div>
+    </div>
+
+    <!-- Payment -->
+    <div class="payment-banner reveal">
+      <div>
+        <h3>
+          <span class="en-i">&#128179; We Accept Vouchers &amp; More</span>
+          <span class="es-i">&#128179; Aceptamos Vouchers y Más</span>
+        </h3>
+        <p>
+          <span class="en-i">Flexible payment options so every family can access quality childcare.</span>
+          <span class="es-i">Opciones de pago flexibles para que cada familia tenga acceso a cuidado infantil de calidad.</span>
+        </p>
+        <div class="pay-tags">
+          <span class="pay-tag">HRA / ACS Vouchers</span>
+          <span class="pay-tag">&#128260; Zelle</span>
+          <span class="pay-tag">&#128181; Cash</span>
+        </div>
+      </div>
+      <div class="license-badge" aria-label="NYS Licensed badge">
+        <div class="badge-icon" aria-hidden="true">&#127963;</div>
+        <p>NYS Licensed<br>
+          <span class="en-i">Office of Children<br>&amp; Family Services</span>
+          <span class="es-i">Oficina de Servicios<br>para Niños y Familias</span>
+        </p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     CONTACT
+══════════════════════════════════════════════════════════ -->
+<section id="contact" aria-labelledby="contact-title">
+  <div class="container">
+
+    <div class="text-center">
+      <p class="section-badge">
+        <span class="en-i">&#128172; Get In Touch</span>
+        <span class="es-i">&#128172; Contáctanos</span>
+      </p>
+      <h2 class="section-title" id="contact-title">
+        <span class="en-b"><span class="accent">Ready</span> to Get Started?</span>
+        <span class="es-b">&#191;<span class="accent">Listo</span> para Empezar?</span>
+      </h2>
+      <p class="section-sub">
+        <span class="en-i">Call today or fill out the form below to schedule your free tour!</span>
+        <span class="es-i">Llámenos hoy o complete el formulario para agendar su tour gratis!</span>
+      </p>
+    </div>
+
+    <div class="contact-grid">
+
+      <!-- Contact info -->
+      <div class="contact-info" role="region" aria-label="Contact details">
+
+        <div class="cinfo-item">
+          <div class="cinfo-icon" aria-hidden="true">&#128222;</div>
+          <div>
+            <div class="cinfo-label"><span class="en-i">Phone</span><span class="es-i">Teléfono</span></div>
+            <a href="tel:+19176843820" class="cinfo-value">917-684-3820</a>
+          </div>
+        </div>
+
+        <div class="cinfo-item">
+          <div class="cinfo-icon" aria-hidden="true">&#128205;</div>
+          <div>
+            <div class="cinfo-label"><span class="en-i">Address</span><span class="es-i">Dirección</span></div>
+            <div class="cinfo-value">1844 Fowler Ave (Apt 2F)<br>Bronx, NY 10462</div>
+          </div>
+        </div>
+
+        <div class="cinfo-item">
+          <div class="cinfo-icon" aria-hidden="true">&#128337;</div>
+          <div>
+            <div class="cinfo-label"><span class="en-i">Hours</span><span class="es-i">Horario</span></div>
+            <div class="cinfo-value">
+              <span class="en-i">Mon – Fri &nbsp; 7:00 AM – 6:00 PM</span>
+              <span class="es-i">Lun – Vie &nbsp; 7:00 AM – 6:00 PM</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="cinfo-item">
+          <div class="cinfo-icon" aria-hidden="true">&#128247;</div>
+          <div>
+            <div class="cinfo-label"><span class="en-i">Follow Us</span><span class="es-i">Síguenos</span></div>
+            <div class="social-row">
+              <a href="https://www.instagram.com/berlindaycarekids"
+                 class="social-btn" target="_blank" rel="noopener noreferrer"
+                 aria-label="Follow @berlindaycarekids on Instagram">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                </svg>
+                @berlindaycarekids
+              </a>
+              <a href="https://www.tiktok.com/@berlindaycarekids"
+                 class="social-btn" target="_blank" rel="noopener noreferrer"
+                 aria-label="Follow @berlindaycarekids on TikTok">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 00-.79-.05 6.33 6.33 0 00-6.33 6.33 6.33 6.33 0 006.33 6.33 6.33 6.33 0 006.33-6.33V8.93a8.16 8.16 0 004.77 1.52V7.01a4.85 4.85 0 01-1-.32z"/>
+                </svg>
+                TikTok
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <a href="tel:+19176843820" class="phone-cta" aria-label="Call 917-684-3820 for a free tour">
+          <span>&#128222;</span>
+          <span>
+            <span style="display:block;font-size:1.1rem;font-weight:900;">917-684-3820</span>
+            <span class="sub">
+              <span class="en-i">Free Tour Available!</span>
+              <span class="es-i">&#161;Tour Gratis!</span>
+            </span>
+          </span>
+        </a>
+
+      </div>
+
+      <!-- Form -->
+      <div class="contact-form" role="region" aria-label="Contact form">
+        <h3>Send Us a Message</h3>
+
+        <form id="contact-form" novalidate aria-label="Contact form">
+          <!-- Honeypot — hidden from real users, traps bots -->
+          <input type="text" name="website" tabindex="-1" autocomplete="off"
+                 style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;"
+                 aria-hidden="true" />
+
+          <div class="form-group">
+            <label for="cf-name">
+              <span class="en-i">Full Name *</span>
+              <span class="es-i">Nombre Completo *</span>
+            </label>
+            <input type="text" id="cf-name" name="name" autocomplete="name"
+                   placeholder="Maria Rodriguez" maxlength="80" required />
+            <div class="field-error" id="ferr-name" role="alert"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="cf-phone">
+              <span class="en-i">Phone Number *</span>
+              <span class="es-i">Número de Teléfono *</span>
+            </label>
+            <input type="tel" id="cf-phone" name="phone" autocomplete="tel"
+                   placeholder="(347) 000-0000" maxlength="20" required />
+            <div class="field-error" id="ferr-phone" role="alert"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="cf-email">
+              <span class="en-i">Email Address</span>
+              <span class="es-i">Correo Electrónico</span>
+            </label>
+            <input type="email" id="cf-email" name="email" autocomplete="email"
+                   placeholder="you@example.com" maxlength="120" />
+            <div class="field-error" id="ferr-email" role="alert"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="cf-age">
+              <span class="en-i">Child's Age Group</span>
+              <span class="es-i">Edad del Niño</span>
+            </label>
+            <select id="cf-age" name="age">
+              <option value="">Select…</option>
+              <option value="infant">Infant (6 wks – 18 mo)</option>
+              <option value="toddler">Toddler / Pre-K (18 mo – 5 yr)</option>
+              <option value="school">School Age (5 – 12 yr)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="cf-message">
+              <span class="en-i">Message</span>
+              <span class="es-i">Mensaje</span>
+            </label>
+            <textarea id="cf-message" name="message" maxlength="1000"
+                      placeholder="I'd like to schedule a tour…"></textarea>
+          </div>
+
+          <button type="submit" class="btn-submit" id="form-submit">
+            <span class="en-i">&#128512; Send Message</span>
+            <span class="es-i">&#128512; Enviar Mensaje</span>
+          </button>
+
+          <div class="form-success" id="form-success" role="status">
+            <span class="en-i">&#10003; Thank you! We'll be in touch very soon.</span>
+            <span class="es-i">&#10003; ¡Gracias! Nos comunicaremos muy pronto.</span>
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</section>
+</main>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     FOOTER
+══════════════════════════════════════════════════════════ -->
+<footer id="footer" role="contentinfo">
+  <div class="container">
+    <div class="footer-inner">
+
+      <a href="#hero" class="nav-logo" aria-label="Back to top">
+        <div class="logo-circle" style="width:40px;height:40px;" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 36 36" fill="none">
+            <rect x="16" y="22" width="4" height="8" rx="1" fill="#c8f0e8"/>
+            <ellipse cx="18" cy="16" rx="9" ry="8"  fill="#4CAF50"/>
+            <ellipse cx="13" cy="19" rx="5" ry="4"  fill="#66BB6A"/>
+            <ellipse cx="23" cy="19" rx="5" ry="4"  fill="#66BB6A"/>
+            <circle cx="8"  cy="9"  r="1.2" fill="#FFD93D"/>
+            <circle cx="28" cy="8"  r="1"   fill="#FFD93D"/>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-name" style="color:var(--yellow);">BERLIN</div>
+          <div class="brand-sub">Group Family Daycare</div>
+        </div>
+      </a>
+
+      <div class="footer-copy">
+        <p>&copy; <span id="footer-year"></span> Berlin Group Family Daycare &mdash; Bronx, NY 10462</p>
+        <p style="margin-top:4px;font-size:.78rem;opacity:.7;">
+          <span class="en-i">NYS Licensed &bull; CPR &amp; First Aid Certified &bull; OCFS Approved</span>
+          <span class="es-i">Licenciado NYS &bull; Certificado CPR &bull; Aprobado por OCFS</span>
+        </p>
+      </div>
+
+      <div class="footer-social">
+        <a href="https://www.instagram.com/berlindaycarekids"
+           target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+          <svg viewBox="0 0 24 24" fill="white" aria-hidden="true">
+            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+          </svg>
+        </a>
+        <a href="https://www.tiktok.com/@berlindaycarekids"
+           target="_blank" rel="noopener noreferrer" aria-label="TikTok">
+          <svg viewBox="0 0 24 24" fill="white" aria-hidden="true">
+            <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 00-.79-.05 6.33 6.33 0 00-6.33 6.33 6.33 6.33 0 006.33 6.33 6.33 6.33 0 006.33-6.33V8.93a8.16 8.16 0 004.77 1.52V7.01a4.85 4.85 0 01-1-.32z"/>
+          </svg>
+        </a>
+      </div>
+
+    </div>
+  </div>
+</footer>
+
+<!-- Scroll-to-top -->
+<button id="scroll-top" aria-label="Back to top">&#8679;</button>
+
+<script src="js/main.js"></script>
+</body>
+</html>

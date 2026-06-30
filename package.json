@@ -1,0 +1,10 @@
+{
+  "name": "berlin-group-family-daycare",
+  "version": "1.0.0",
+  "description": "Berlin Group Family Daycare website",
+  "scripts": {
+    "start": "npx --yes serve . --listen 3000 --single",
+    "dev":   "npx --yes serve . --listen 3000 --single --cors"
+  },
+  "private": true
+}
